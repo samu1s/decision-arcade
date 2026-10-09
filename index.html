@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Decision Arcade 🎮</title>
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --panel-bg: #131a2a;
+            --neon-blue: #00f2ff;
+            --neon-purple: #bd00ff;
+            --neon-pink: #ff007c;
+            --neon-green: #00ff66;
+            --text-main: #f1f5f9;
+            --text-muted: #64748b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .arcade-container { width: 100%; max-width: 1000px; background: var(--panel-bg); border: 2px solid rgba(0, 242, 255, 0.3); border-radius: 24px; padding: 30px; box-shadow: 0 0 35px rgba(0, 242, 255, 0.15); display: grid; grid-template-columns: 1fr; gap: 30px; }
+        @media (min-width: 850px) { .arcade-container { grid-template-columns: 1.2fr 1fr; } }
+        .arcade-header { grid-column: 1 / -1; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 20px; }
+        .arcade-title { font-size: 2.5rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 15px; }
+        .mode-tabs { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .tab-btn { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-main); padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 0.85rem; transition: all 0.2s ease; }
+        .tab-btn.active { border-color: var(--neon-blue); background: rgba(0, 242, 255, 0.15); box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); }
+        .dashboard-left { display: flex; flex-direction: column; gap: 20px; }
+        .section-box { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 16px; }
+        .section-title { font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; font-weight: 700; letter-spacing: 1px; }
+        .modifier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .mod-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s; }
+        .mod-card.active { border-color: var(--neon-green); background: rgba(0, 255, 102, 0.1); box-shadow: 0 0 10px rgba(0, 255, 102, 0.2); }
+        .mod-card h4 { font-size: 0.95rem; margin-bottom: 4px; }
+        .mod-card p { font-size: 0.75rem; color: var(--text-muted); }
+        .input-bar { display: flex; gap: 8px; }
+        input[type="text"] { flex: 1; background: #090d16; border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px; border-radius: 12px; color: white; outline: none; font-size: 0.95rem; }
+        input[type="text"]:focus { border-color: var(--neon-blue); }
+        .btn-action { background: var(--neon-blue); border: none; color: #000; padding: 0 20px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+        .pool-zone { display: flex; flex-wrap: wrap; gap: 8px; max-height: 150px; overflow-y: auto; }
+        .game-chip { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; }
+        .game-chip .close-node { cursor: pointer; color: var(--neon-pink); margin-left: 8px; font-weight: 900; }
+        .theater-right { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .wheel-rig { position: relative; width: 340px; height: 340px; margin-bottom: 25px; }
+        .ticker-needle { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 24px solid var(--neon-pink); z-index: 10; filter: drop-shadow(0 0 5px var(--neon-pink)); }
+        canvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .core-hub { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: #ffffff; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.9rem; cursor: pointer; border: 4px solid var(--panel-bg); box-shadow: 0 0 15px rgba(255,255,255,0.5); user-select: none; }
+        .screen-result { text-align: center; min-height: 90px; }
+        .banner-text { font-size: 1.4rem; font-weight: 800; margin-bottom: 12px; color: var(--neon-green); text-shadow: 0 0 10px rgba(0, 255, 102, 0.2); }
+        .decision-window { display: none; gap: 12px; justify-content: center; }
+        .decision-window.active { display: flex; }
+        .btn-gate { padding: 10px 22px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; color: white; text-transform: uppercase; font-size: 0.8rem; }
+        .gate-veto { background: var(--neon-pink); }
+        .gate-lock { background: var(--neon-green); color: #000; }
+    </style>
+</head>
+<body>
+    <div class="arcade-container">
+        <div class="arcade-header">
+            <h1 class="arcade-title">The Decision Arcade</h1>
+            <div class="mode-tabs">
+                <button class="tab-btn active" id="tab-food" onclick="switchMode('food')">🍔 Food Roulette</button>
+                <button class="tab-btn" id="tab-anime" onclick="switchMode('anime')">⚔️ Anime Selector</button>
+                <button class="tab-btn" id="tab-custom" onclick="switchMode('custom')">🛠️ Custom Arena</button>
+                
+                
+
+            </div>
+        </div>
+        <div class="dashboard-left">
+            <div class="section-box">
+                <div class="section-title">Modifiers</div>
+                <div class="modifier-grid">
+                    <div class="mod-card" id="mod-chaos" onclick="toggleMod('chaos')">
+                        <h4>Chaos Mode</h4>
+                        <p>Insane speed boost</p>
+                    </div>
+                    <div class="mod-card" id="mod-elimination" onclick="toggleMod('elimination')">
+                        <h4>Elimination</h4>
+                        <p>Remove choice on lock</p>
+                    </div>
+                </div>
+            </div>
+            <div class="section-box">
+                <div class="section-title">Item Terminal</div>
+                <div class="input-bar">
+                    <input type="text" id="terminalInput" placeholder="Add custom item...">
+                    <button class="btn-action" onclick="addItem()">Add</button>
+                </div>
+            </div>
+            <div class="section-box">
+                <div class="section-title" id="poolTitle">Active Pool</div>
+                <div class="pool-zone" id="poolZone"></div>
+            </div>
+        </div>
+        <div class="theater-right">
+            <div class="wheel-rig">
+                <div class="ticker-needle"></div>
+                <canvas id="arcadeCanvas" width="600" height="600"></canvas>
+                <div class="core-hub" onclick="spinWheel()">SPIN</div>
+            </div>
+            <div class="screen-result">
+                <div class="banner-text" id="resultBanner"></div>
+                <div class="decision-window" id="decisionWindow">
+                    <button class="btn-gate gate-veto" onclick="executeVeto()">Veto!</button>
+                    <button class="btn-gate gate-lock" onclick="executeLockIn()">Lock In</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+        <script>
+        const presets = {
+            food: ['Noodles', 'Fried Chicken', 'Burgers', 'Tacos', 'Biryani', 'Pasta', 'Ice Cream', 'Sandwich'],
+            anime: ['Attack on Titan', 'Naruto', 'Demon Slayer', 'One Piece', 'Jujutsu Kaisen', 'Death Note'],
+            custom: ['Option A', 'Option B', 'Option C']
+            
+        };
+        const palettes = {
+            food: ['#ff0055', '#ff5500', '#ffaa00', '#e60067', '#ff007c', '#ff7700'],
+            anime: ['#bd00ff', '#7100ff', '#00bfff', '#3c0099', '#9a00e6', '#00f2ff'],
+            custom: ['#00f2ff', '#0066ff', '#00ff66', '#00a3ff', '#059669', '#3b82f6']
+        };
+        let currentMode = 'food';
+        let currentItems = [...presets.food];
+        let mods = { chaos: false, elimination: false };
+        let rotation = 0;
+        let isSpinning = false;
+        let selectedIndex = null;
+        const canvas = document.getElementById('arcadeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function switchMode(mode) {
+            if (isSpinning) return;
+            currentMode = mode;
+            currentItems = [...presets[mode]];
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + mode).classList.add('active');
+            clearResult();
+            renderPool();
+        }
+        function toggleMod(mod) {
+            if (isSpinning) return;
+            mods[mod] = !mods[mod];
+            document.getElementById('mod-' + mod).classList.toggle('active', mods[mod]);
+        }
+        function renderPool() {
+            const zone = document.getElementById('poolZone');
+            zone.innerHTML = '';
+            document.getElementById('poolTitle').textContent = currentMode.toUpperCase() + " Pool";
+            currentItems.forEach((item, index) => {
+                const chip = document.createElement('div');
+                chip.className = 'game-chip';
+                chip.innerHTML = item + '<span class="close-node" onclick="removeItem(' + index + ')">&times;</span>';
+                zone.appendChild(chip);
+            });
+            drawWheel();
+        }
+        function addItem() {
+            const input = document.getElementById('terminalInput');
+            const val = input.value.trim();
+            if (val && !isSpinning) {
+                currentItems.push(val);
+                input.value = '';
+                renderPool();
+                clearResult();
+            }
+        }
+        document.getElementById('terminalInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addItem();
+        });
+        function removeItem(index) {
+            if (isSpinning) return;
+            currentItems.splice(index, 1);
+            renderPool();
+            clearResult();
+        }
+        function drawWheel() {
+            const count = currentItems.length;
+            const r = canvas.width / 2;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (count === 0) {
+                ctx.fillStyle = '#64748b';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('ADD ITEMS TO START', r, r);
+                return;
+            }
+            const arcSize = (2 * Math.PI) / count;
+            const colors = palettes[currentMode];
+            for (let i = 0; i < count; i++) {
+                const angle = rotation + (i * arcSize);
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.beginPath();
+                ctx.moveTo(r, r);
+                ctx.arc(r, r, r - 5, angle, angle + arcSize);
+                ctx.lineTo(r, r);
+                ctx.fill();
+                ctx.save();
+                ctx.translate(r, r);
+                ctx.rotate(angle + arcSize / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 22px sans-serif';
+                let text = currentItems[i];
+                if (text.length > 12) text = text.substring(0, 10) + '...';
+                ctx.fillText(text, r - 40, 8);
+                ctx.restore();
+            }
+        }
+        function clearResult() {
+            document.getElementById('resultBanner').textContent = '';
+            document.getElementById('decisionWindow').classList.remove('active');
+        }
+        function spinWheel() {
+            if (isSpinning || currentItems.length === 0) return;
+            isSpinning = true;
+            clearResult();
+            const duration = mods.chaos ? 1500 : 3500;
+            const start = performance.now();
+            const target = rotation + (mods.chaos ? 15 : 6) * 2 * Math.PI + Math.random() * 2 * Math.PI;
+            const initialRotation = rotation;
+            function animate(now) {
+                const elapsed = now - start;
+                const t = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - t, 3);
+                rotation = initialRotation + (target - initialRotation) * ease;
+                drawWheel();
+                if (t < 1) { requestAnimationFrame(animate); } else { finalizeSpin(); }
+            }
+            requestAnimationFrame(animate);
+        }
+        function finalizeSpin() {
+            isSpinning = false;
+            const count = currentItems.length;
+            const arcSize = (2 * Math.PI) / count;
+            let norm = (3 * Math.PI / 2 - rotation) % (2 * Math.PI);
+            if (norm < 0) norm += (2 * Math.PI);
+            selectedIndex = Math.floor(norm / arcSize) % count;
+            document.getElementById('resultBanner').textContent = "Universe Chose: " + currentItems[selectedIndex];
+            document.getElementById('decisionWindow').classList.add('active');
+        }
+        function executeVeto() {
+            if (selectedIndex === null) return;
+            currentItems.splice(selectedIndex, 1);
+            selectedIndex = null;
+            renderPool();
+            clearResult();
+        }
+        function executeLockIn() {
+            alert("Locked in: " + currentItems[selectedIndex]);
+            if (mods.elimination) {
+                currentItems.splice(selectedIndex, 1);
+                selectedIndex = null;
+                renderPool();
+            }
+            clearResult();
+        }
+        renderPool();
+    </script>
+</body>
+</html>
